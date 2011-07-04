@@ -1,0 +1,101 @@
+"Game Master"
+{
+	"engine.l4d.txt"
+	{
+		"engine"	"left4dead"
+	}
+	
+	"engine.l4d2.txt"
+	{
+		"engine"	"left4dead2"
+	}
+	
+	"engine.ep2v.txt"
+	{
+		"engine"	"orangebox_valve"
+	}
+	
+	"engine.darkm.txt"
+	{
+		"engine"	"darkmessiah"
+	}
+	
+/*
+	Not Yet
+	
+	"engine.bgt.txt"
+	{
+		"engine"	"bloodygoodtime"
+	}
+*/
+	
+	"game.insurgency.txt"
+	{
+		"game"		"insurgency"
+	}
+	
+	"game.pvkii.txt"
+	{
+		"game"		"pvkii"
+	}
+	
+	"game.ff.txt"
+	{
+		"game"		"FortressForever"
+	}
+	
+	"game.garrysmod.txt"
+	{
+		"game"		"garrysmod"
+	}
+	
+	"game.empires.txt"
+	{
+		"game"		"empires"
+	}
+	
+	"game.sourceforts.txt"
+	{
+		"game"		"sourceforts"
+	}
+	
+	"game.hidden.txt"
+	{
+		"game"		"hidden"
+	}
+	
+	"game.zm.txt"
+	{
+		"game"		"zombie_master"
+	}
+	
+	"game.zpanic.txt"
+	{
+		"game"		"zps"
+	}
+	
+	"game.neotokyo.txt"
+	{
+		"game"		"NeotokyoSource"
+	}
+	
+	"game.fof.txt"
+	{
+		"game"		"fistful_of_frags"
+	}
+	
+	"game.sgtls.txt"
+	{
+		"game"		"sgtls"
+	}
+	
+	"game.alienswarm.txt"
+	{
+		"game"		"swarm"
+	}
+	
+	"game.dinodday.txt"
+	{
+		"game"		"dinodday"
+	}
+}

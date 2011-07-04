@@ -1,0 +1,154 @@
+"Games"
+{
+	"#default"
+	{
+		"#supported"
+		{
+			"game"		"cstrike"
+			"game"		"dod"
+			"game"		"tf"
+			"game"		"hl2mp"
+		}
+		
+		"Offsets"
+		{
+			"EndTouch"
+			{
+				"windows"	"98"
+				"linux"		"99"
+				"mac"		"99"
+			}
+			"FireBullets"
+			{
+				"windows"	"110"
+				"linux"		"111"
+				"mac"		"111"
+			}
+			"GroundEntChanged"
+			{
+				"windows"	"174"
+				"linux"		"175"
+				"mac"		"175"
+			}
+			"OnTakeDamage"
+			{
+				"windows"	"61"
+				"linux"		"62"
+				"mac"		"62"
+			}
+			"PreThink"
+			{
+				"windows"	"324"
+				"linux"		"325"
+				"mac"		"325"
+			}
+			"PostThink"
+			{
+				"windows"	"325"
+				"linux"		"326"
+				"mac"		"326"
+			}
+			"SetTransmit"
+			{
+				"windows"	"19"
+				"linux"		"20"
+				"mac"		"20"
+			}
+			"ShouldCollide"
+			{
+				"windows"	"15"
+				"linux"		"16"
+				"mac"		"16"
+			}
+			"Spawn"
+			{
+				"windows"	"21"
+				"linux"		"22"
+				"mac"		"22"
+			}
+			"StartTouch"
+			{
+				"windows"	"96"
+				"linux"		"97"
+				"mac"		"97"
+			}
+			"Think"
+			{
+				"windows"	"46"
+				"linux"		"47"
+				"mac"		"47"
+			}
+			"Touch"
+			{
+				"windows"	"97"
+				"linux"		"98"
+				"mac"		"98"
+			}
+			"TraceAttack"
+			{
+				"windows"	"59"
+				"linux"		"60"
+				"mac"		"60"
+			}
+			"UpdateOnRemove"
+			{
+				"windows"	"103"
+				"linux"		"104"
+				"mac"		"104"
+			}
+			"Use"
+			{
+				"windows"	"95"
+				"linux"		"96"
+				"mac"		"96"
+			}
+			"VPhysicsUpdate"
+			{
+				"windows"	"154"
+				"linux"		"155"
+				"mac"		"155"
+			}
+			"Weapon_CanSwitchTo"
+			{
+				"windows"	"258"
+				"linux"		"259"
+				"mac"		"259"
+			}
+			"Weapon_CanUse"
+			{
+				"windows"	"252"
+				"linux"		"253"
+				"mac"		"253"
+			}
+			"Weapon_Drop"
+			{
+				"windows"	"255"
+				"linux"		"256"
+				"mac"		"256"
+			}
+			"Weapon_Equip"
+			{
+				"windows"	"252"
+				"linux"		"253"
+				"mac"		"253"
+			}
+			"Weapon_Switch"
+			{
+				"windows"	"256"
+				"linux"		"257"
+				"mac"		"257"
+			}
+		}
+		
+		"Signatures"
+		{
+			"IEntityFactoryDictionary"
+			{
+				"library"	"server"
+				"windows"	"\xB8\x01\x00\x00\x00\x84\x2A\x2A\x2A\x2A\x2A\x75\x1D\x09\x2A\x2A\x2A\x2A\x2A\xB9\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xB8\x2A\x2A\x2A\x2A\xC3"
+				"linux"		"@_Z23EntityFactoryDictionaryv"
+				"mac"		"@_Z23EntityFactoryDictionaryv"
+			}
+		}
+	}
+}
