@@ -283,6 +283,28 @@
 			}
 			
 			/*
+			 * CDirector::GetScriptValue(const char*, float)
+			 */
+			"CDirector_GetScriptValueFloat"
+			{
+				"library" "server"
+				"linux" "@_ZN9CDirector14GetScriptValueEPKcf"
+				"windows" "\x8B\x81\x2A\x2A\x2A\x2A\x83\xEC\x2A\x83\x2A\x2A\x74\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xD2\x3B\xCA\x74\x2A\x56\x8D\x74\x2A\x2A\x56\x8B\x74\x2A\x2A\x66\x89\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x89\x54\x2A\x2A\x8B\x11\x56\x50\x8B\x42\x2A\xFF\xD0\x84\xC0\x5E\x74\x2A\x8D\x4C\x2A\x2A\x51\x8D\x4C\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x75\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x11\x8B\x52\x2A\x8D\x2A\x2A\x50\xFF\xD2\xD9\x2A\x2A\x2A\x83\xC4\x2A\xC2"
+					 /* 8B 81 ? ? ? ? 83 EC ? 83 ? ? 74 ? 8B 0D ? ? ? ? 33 D2 3B CA 74 ? 56 8D 74 ? ? 56 8B 74 ? ? 66 89 ? ? ? 66 89 ? ? ? 89 54 ? ? 8B 11 56 50 8B 42 ? FF D0 84 C0 5E 74 ? 8D 4C ? ? 51 8D 4C ? ? E8 ? ? ? ? 84 C0 75 ? 8B 0D ? ? ? ? 8B 11 8B 52 ? 8D ? ? 50 FF D2 D9 ? ? ? 83 C4 ? C2 */
+			}
+			
+			/*
+			 * CDirector::GetScriptValue(const char*, const char*, char*, int)
+			 */
+			"CDirector_GetScriptValueString"
+			{
+				"library" "server"
+				"linux" "@_ZN9CDirector14GetScriptValueEPKcS1_Pci"
+				"windows" "\x8B\x81\x2A\x2A\x2A\x2A\x83\xEC\x2A\x83\xF8\x2A\x56\x8B\x74\x2A\x2A\x74\x2A\x8B"
+					 /* 8B 81 ? ? ? ? 83 EC ? 83 F8 ? 56 8B 74 ? ? 74 ? 8B */
+			}
+			
+			/*
 			 * CDirector::IsFinaleEscapeInProgress(void)
 			 */
 			"CDirector_IsFinaleEscapeInProgress"
@@ -551,13 +573,42 @@
 			
 			/*
 			 *	CTerrorMeleeWeapon::StartMeleeSwing(CTerrorPlayer *, bool)
+			 *
+			 *  find from TestMeleeSwingCollision (string "MeleeSlashSplatter") xref -> DoMeleeSwing -> xref of that
 			 */
 			"StartMeleeSwing"
 			{
 				"library"	"server"
 				"linux"		"@_ZN18CTerrorMeleeWeapon15StartMeleeSwingEP13CTerrorPlayerb"
-				"windows"	"\x53\x55\x56\x8B\xF1\x8B\x86\x2A\x2A\x2A\x2A\x50\xB9\x80\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xE8\x33\xDB\x3B\xEB\x0F"
-				/* 53 55 56 8B F1 8B 86 ? ? ? ? 50 B9 80 ? ? ? E8 ? ? ? ? 8B E8 33 DB 3B EB 0F */
+				"windows"	"\x53\x55\x56\x8B\xF1\x8B\x86\x2A\x2A\x2A\x2A\x50\xB9\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xE8\x33\xDB\x3B\xEB\x0F"
+				/* 53 55 56 8B F1 8B 86 ? ? ? ? 50 B9 ? ? ? ? E8 ? ? ? ? 8B E8 33 DB 3B EB 0F */
+			}
+			
+			/*
+			 *	CDirectorScriptedEventManager::SendInRescueVehicle(void)
+			 *
+			 *  find by String "FinaleEscapeStarted"
+			 */
+			"SendInRescueVehicle"
+			{
+				"library"	"server"
+				"linux"		"@_ZN29CDirectorScriptedEventManager19SendInRescueVehicleEv"
+				"windows"	"\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\xF1\x6A\x2A\xB9\xE8\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\x68"
+				/* ? ? ? ? ? ? ? ? ? 8B F1 6A ? B9 E8 ? ? ? E8 ? ? ? ? 85 C0 75 ? 68 */
+			}
+			
+			/*
+			 *	CDirectorScriptedEventManager__ChangeFinaleStage(int, char arg, int)
+			 * or CDirectorScriptedEventManager::ChangeFinaleStage(CDirectorScriptedEventManager::FinaleStageType,char  const*)
+			 *
+			 *  find by String "CHANGEFINALESTAGEOVERRIDE: %s\n"
+			 */
+			"ChangeFinaleStage"
+			{
+				"library"	"server"
+				"linux"		"@_ZN29CDirectorScriptedEventManager17ChangeFinaleStageENS_15FinaleStageTypeEPKc"
+				"windows"	"\x2A\x2A\x2A\x2A\x2A\x2A\x53\x8B\x9C\x2A\x2A\x2A\x2A\x2A\x57\x53\x68"
+				/* ? ? ? ? ? ? 53 8B 9C ? ? ? ? ? 57 53 68 */
 			}
 
 /*********************************************************************
@@ -628,7 +679,7 @@
 			{
 				/* look for "#Valve_Reject_Server_Full" */
 				"library"	"engine"
-				"linux"		"\x8B\x96\x7C\x01\x00\x00\x85\xD2\x74"
+				"linux"		"\x8B\x86\x7C\x01\x00\x00\x85\xC0\x74" // 2.0.8.7 fix, thanks to ivailosp for the sig
 
 				"windows"	"\x74\x2A\x8B\x54\x2A\x2A\x8B\x06\x8B\x7A\x2A\x8B\x50\x2A\x8B\xCE\xFF\xD2\x2B\xF8\x8B\x06\x8B\x50\x2A\x8B\xCE\xFF\xD2\x03\xC7"
 					/* 74 ?  8B 54 ?  ?  8B 06 8B 7A ?  8B 50 ?  8B CE FF D2 2B F8 8B 06 8B 50 ?  8B CE FF D2 03 C7 */			
