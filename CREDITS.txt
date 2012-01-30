@@ -1,1 +1,37 @@
-Confogl is a collection of free software for Left4Dead2 servers used for competitive play.Source code and full credits can be found for all components as follows:SDKHooks 2.0 by psychonic and DJTsunamihttp://forums.alliedmods.net/showthread.php?t=106748Stripper:Source 1.2.2 (hg tip) by BAILOPANBinaries from: http://www.bailopan.net/stripper/snapshots/1.2/Source from: http://hg.alliedmods.net/strippersource/Left4Downtown2 0.5.3 by ProdigySim, AtomicStryker et. al.Source from: http://code.google.com/p/left4downtown2/LGOFNOC config manager by ProdigySimSource from: https://github.com/ProdigySim/LGOFNOCVarious other sourcemod plugins from:https://bitbucket.org/ProdigySim/misc-sourcemod-pluginshttps://bitbucket.org/CanadaRox/random-sourcemod-stuffAnd other locations. See mercurial changelog for full sourcecode info.
+Confogl is a collection of free software for Left4Dead2 servers used for competitive play.
+
+Source code and full credits can be found for all components as follows:
+
+SDKHooks 2.0 by psychonic and DJTsunami
+http://forums.alliedmods.net/showthread.php?t=106748
+
+Stripper:Source 1.2.2 (hg tip) by BAILOPAN
+Binaries from: http://www.bailopan.net/stripper/snapshots/1.2/
+Source from: http://hg.alliedmods.net/strippersource/
+
+Left4Downtown2 0.5.3 by ProdigySim, AtomicStryker et. al.
+Source from: http://code.google.com/p/left4downtown2/
+
+L4DToolz 1.0.0.10 by ivailosp
+http://forums.alliedmods.net/showthread.php?t=93600
+
+And other locations. See mercurial changelog for full sourcecode info.
+
+All content contained in this repository is copyrighted and released under the GPL v3 with the extensions provided in the SourceMod License.
+http://www.sourcemod.net/license.php
+
+Source Code is not tracked here for all parts of this project. However it is available upon request. The correct references to source code are available in the repository commit log.
+
+Thanks to BAILOPAN for Stripper:Source
+Thanks to ivaliosp for L4DToolz
+Thanks to Downtown1, AtomicStryker et. al for Left4Downtown2
+Thanks to Tsunami and psychonic for SDKHooks
+
+Plugin contributors (see individual plugins for exact details)
+ProdigySim
+CanadaRox
+MrZero
+DieTeeTasse
+Don
+Blade
+AtomicStryker
