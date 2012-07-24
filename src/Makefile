@@ -2,48 +2,99 @@
 # by ProdigySim
 
 # export SOURCEMOD=/path/to/sm
+# Source code/includes locations-- based on repos
 SOURCEMOD ?= ../../sourcemod
+# crx-git: https://github.com/CanadaRox/sourcemod-plugins
+CRXGIT ?= crx-git
+# crx-stuff: https://bitbucket.org/CanadaRox/random-sourcemod-stuff
+CRXSTUFF ?= crx-stuff
+# psim-stuff: https://bitbucket.org/ProdigySim/misc-sourcemod-plugins
+PSIMSTUFF ?= psim-stuff
+# lgofnoc: https://github.com/ConfoglTeam/LGOFNOC
+LGOFNOC ?= lgofnoc
+# don-stuff: https://bitbucket.org/DonSanchez/random-sourcemod-stuff/
+DONSTUFF ?= don-stuff
+# l4d2util: https://github.com/Jahze/l4d2util
+L4D2UTIL ?= l4d2util
+# l4d2_direct: https://github.com/ProdigySim/l4d2_direct
+L4D2DIRECT ?= l4d2_direct
 
-SPCOMP = ${SOURCEMOD}/scripting/spcomp
-INCLUDES = -iinclude
+
+## Plugins to build.
+
+OPT_TARGETS = \
+	bossspawningfix.smx l4d2_consistenthordes.smx l4d2_getupfix.smx l4d2_noelevatorspit.smx l4d2_si_ffblock.smx \
+	l4d2_weaponrules.smx l4d_inaudible_ghosts.smx l4dhots.smx lerptracker.smx \
+\
+	l4d2_blind_infected.smx l4d_weapon_limits.smx \
+\
+	l4d2_nobhaps.smx l4d2_scoremod.smx \
+\
+	l4d2_nospitterduringtank.smx l4d_thirdpersonshoulderblock.smx \
+\
+	NoMercyElevatorFix.smx l4d2_versuswaterbrake.smx
+
+TARGETS = l4dready.smx lgofnoc.smx
+
+
+PSIM_DIRS = bossspawningfix elevatorspitnullification l4d2_consistenthordes l4d2_getupfix l4d2_si_ffblock l4d2_weaponrules \
+	l4d_inaudible_ghosts l4dhots lerptrack
+
+CRXGIT_DIRS = weapon_limits blind_infected_l4d2 
+
+DONSTUFF_DIRS = l4d2_nospitterduringtank l4d_thirdpersonshoulderblock
+
+SM = $(realpath $(SOURCEMOD))
+SPCOMP = $(SM)/scripting/spcomp
+INCLUDE_DIRS = $(LGOFNOC) $(SM)/scripting/include $(L4D2DIRECT)/scripting/include $(L4D2UTIL)/scripting/include $(PSIMSTUFF)
+SOURCE_DIRS = $(addprefix $(CRXGIT)/,$(CRXGIT_DIRS)) $(addprefix $(PSIMSTUFF)/,$(PSIM_DIRS)) $(CRXSTUFF) \
+	$(addprefix $(DONSTUFF)/,$(DONSTUFF_DIRS)) $(L4D2UTIL)/scripting
 FLAGS = -v0
 OUTDIR = bin
-VPATH=${OUTDIR}
+OUTDIR_OPT = $(OUTDIR)/optional
+INCLUDES = $(addprefix -i,$(INCLUDE_DIRS))
 
-TARGETS = bossspawningfix.smx l4d2_noelevatorspit.smx l4d2_weaponrules.smx l4dhots.smx lerptracker.smx \
-        l4d2_blind_infected.smx l4d2_nospitterduringtank.smx l4d_inaudible_ghosts.smx lgofnoc.smx \
-        l4d2_consistenhordes.smx l4d2_scoremod.smx l4d_notank.smx l4d2_getupfix.smx \
-        l4d2_si_ffblock.smx l4d2_nobhaps.smx l4d_thirdpersonshoulderblock.smx l4d_weapon_limits.smx \
-        NoMercyElevatorFix.smx l4d2_versuswaterbrake.smx l4dready.smx
+# Check OUTDIR for .smx files
+vpath %.smx $(OUTDIR) $(OUTDIR_OPT)
+# Check SOURCE_DIRS for .sp files
+vpath %.sp $(SOURCE_DIRS)
+# Check INCLUDE_DIRS for .inc dependencies
+vpath %.inc $(INCLUDE_DIRS) $(SOURCE_DIRS)
 
-LGOFNOC_FILES = CvarSettings.sp MapInfo.sp  MatchMode.sp  configs.sp  customtags.inc  \
-        functions.sp keyvalues_stocks.inc
 
-LGOFNOC_INCLUDES = $(addprefix lgofnoc-includes/,${LGOFNOC_FILES})
-
+.PHONY: clean plugins-prep
 .SUFFIXES:
 .SUFFIXES: .sp .smx
 
 .sp.smx: $<
-	${SPCOMP} ${INCLUDES} ${FLAGS} $< -o${OUTDIR}/$@
+	$(SPCOMP) $(INCLUDES) $(FLAGS) $< -o$(OUTDIR_OPT)/$@
 
+default: all
 all: plugins
 
-plugins: plugins-prep ${TARGETS}
+plugins: plugins-prep $(TARGETS) $(OPT_TARGETS)
+
+lgofnoc.smx:
+	cd $(LGOFNOC); $(MAKE) SOURCEMOD=$(SM)
+	mv $(LGOFNOC)/lgofnoc.smx $(OUTDIR)/
+
+# special because it uses a different target directory
+l4dready.smx: l4dready.sp
+	$(SPCOMP) $(INCLUDES) $(FLAGS) $< -o$(OUTDIR)/$@
 
 plugins-prep:
-	-@mkdir -p ${OUTDIR}
+	mkdir -p $(OUTDIR_OPT)
+
+install:
+	mkdir -p ../addons/sourcemod/plugins
+	cp -R bin/* ../addons/sourcemod/plugins/
 
 clean:
-	-@rm -f ${TARGETS} >/dev/null 2>&1
-	-@rm -rf ${OUTDIR}
-
-lgofnoc.smx: lgofnoc.sp ${LGOFNOC_INCLUDES}
-	${SPCOMP} ${INCLUDES} ${FLAGS} -ilgofnoc-includes lgofnoc.sp -o${OUTDIR}/$@
+	-@rm -f $(TARGETS) >/dev/null 2>&1
+	-@rm -rf $(OUTDIR)
+	-@cd $(LGOFNOC) >/dev/null 2>&1 && $(MAKE) OUTDIR=$(OUTDIR) clean
 
 
-l4d2_weaponrules.smx: include/weapons.inc
-l4d2_blind_infected.smx: include/weapons.inc
-l4d2_weaponlimits.smx: include/weapons.inc
-l4d_weapon_limits.smx: include/weapons.inc
-l4d2_getupfix.smx: include/survivors.inc
+#PSIM-STUFF
+
+
