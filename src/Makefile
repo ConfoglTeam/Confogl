@@ -88,6 +88,7 @@ plugins-prep:
 install:
 	mkdir -p ../addons/sourcemod/plugins
 	cp -R bin/* ../addons/sourcemod/plugins/
+	cp $(L4D2DIRECT)/gamedata/l4d2_direct.txt ../addons/sourcemod/gamedata/
 
 clean:
 	-@rm -f $(TARGETS) >/dev/null 2>&1
