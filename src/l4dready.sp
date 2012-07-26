@@ -19,7 +19,7 @@
 #define READY_DEBUG 0
 #define READY_DEBUG_LOG 0
 
-#define READY_VERSION "0.17.10"
+#define READY_VERSION "0.17.11"
 #define READY_SCAVENGE_WARMUP 1
 #define READY_LIVE_COUNTDOWN 5
 #define READY_UNREADY_HINT_PERIOD 10.0
@@ -79,6 +79,9 @@ new Handle:menuPanel 					= INVALID_HANDLE;
 
 new Handle:liveTimer 					= INVALID_HANDLE;
 new bool:unreadyTimerExists				= false;
+
+new Handle:pauseDelay 					= INVALID_HANDLE;
+new bool:blockPause				= false;
 
 new Handle:cvarEnforceReady 			= INVALID_HANDLE;
 new Handle:cvarReadyCompetition 		= INVALID_HANDLE;
@@ -850,13 +853,28 @@ public Action:Command_Spectate(client, args)
 		if(readyMode) checkStatus();
 	}
 	//respectate trick to get around spectator camera being stuck
+	//also make sure to block pause troller
 	else
 	{
+		blockPause = true;
+		if (pauseDelay != INVALID_HANDLE)
+		{
+			CloseHandle(pauseDelay);
+			pauseDelay = INVALID_HANDLE;
+		}
+		pauseDelay = CreateTimer(0.2, blockPauseToggle);
+
 		ChangePlayerTeam(client, L4D_TEAM_INFECTED);
 		CreateTimer(0.1, Timer_Respectate, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 
 	return Plugin_Handled;
+}
+
+public Action:blockPauseToggle(Handle:timer)
+{
+	blockPause = false;
+	pauseDelay = INVALID_HANDLE;
 }
 
 public Action:Timer_Respectate(Handle:timer, any:client)
@@ -2344,6 +2362,12 @@ public Action:AllCanUnpause(Handle:timer)
 
 public Action:readyPause(client, args)
 {
+	//blocking pause troller
+	if (blockPause)
+	{
+		return Plugin_Handled;
+	}
+
 	//server can pause without a request
 	if(!client)
 	{
@@ -2363,6 +2387,12 @@ public Action:readyPause(client, args)
 }
 public Action:readyUnpause(client, args)
 {
+	//blocking unpause troller
+	if (blockPause)
+	{
+		return Plugin_Handled;
+	}
+
 	//server can unpause without a request
 	if(!client)
 	{
