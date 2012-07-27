@@ -24,14 +24,14 @@
 			"ValveRejectServerFullFirst"
 			{
 				"windows"	"31"  /* cmp eax, [esi+180h] -> cmp eax, imm32 */ 
-				"linux"		"42"  /* cmp edx, [ebp+180h] -> cmp edx, imm32 */
+				"linux"		"42"  /* cmp edi, [esi+17ch] -> cmp edi, imm32 */
 			}
 			
 			/* Offset into g_pGameRules */
 			"VersusMaxCompletionScore"
 			{
-				"windows"	"1172"
-				"linux"		"1164"
+				"windows"	"1176"
+				"linux"		"1168"
 			}
 			/* Offset into CTerrorPlayer */
 			"SpawnTimer"
@@ -476,8 +476,8 @@
 			{
 				"library"	"server"
 				"linux"	"@_Z13GetDifficultyv"
-				"windows" "\xA1\x2A\x4B\x68\x10\xC3"
-				/* A1 ? 4B 68 10 C3 */
+				"windows" "\xA1\x2A\x5C\x68\x10\xC3"
+				/* A1 ? 5C 68 10 C3 */
 			}
 			
 			/*
@@ -487,8 +487,9 @@
 			{
 				"library"	"server"
 				"linux"		"@_ZN16CTerrorGameRules32HasConfigurableDifficultySettingEv"
-				"windows"	"\xE8\x2A\xFC\xFF\xFF\x84\xC0\x75\x0C\xE8\x2A\xFC\xFF\xFF\x84\xC0\x75\x03\x33\xC0\xC3\xB8\x01\x00\x00\x00\xC3"
-				/* E8 ? FC FF FF 84 C0 75 0C E8 ? FC FF FF 84 C0 75 03 33 C0 C3 B8 01 00 00 00 C3 */
+				"windows"	"\xE8\x2A\xFC\xFF\xFF\x84\xC0\x75\x0C\xE8\x2A\x2A\xFF\xFF\x84\xC0\x75\x03\x33\xC0\xC3\xB8\x01\x00\x00\x00\xC3"
+				/* E8 ? FC FF FF 84 C0 75 0C E8 ? ? FF FF 84 C0 75 03 33 C0 C3 B8 01 00 00 00 C3 */
+
 				/* Using offset for windows */
 			}
 			
@@ -593,8 +594,8 @@
 			{
 				"library"	"server"
 				"linux"		"@_ZN29CDirectorScriptedEventManager19SendInRescueVehicleEv"
-				"windows"	"\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\xF1\x6A\x2A\xB9\xE8\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\x68"
-				/* ? ? ? ? ? ? ? ? ? 8B F1 6A ? B9 E8 ? ? ? E8 ? ? ? ? 85 C0 75 ? 68 */
+				"windows"	"\x83\xEC\x18\x56\x68\x2A\x2A\x2A\x2A\x8B\xF1\x6A\x00\xB9\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\x68"
+                /* 83 EC 18 56 68 ? ? ? ? 8B F1 6A 00 B9 ? ? ? ? E8 ? ? ? ? 85 C0 75 ? 68 */
 			}
 			
 			/*
@@ -611,6 +612,20 @@
 				/* ? ? ? ? ? ? 53 8B 9C ? ? ? ? ? 57 53 68 */
 			}
 
+			/*
+			 *	CDirectorVersusMode::EndVersusModeRound(bool)
+			 *  Updates scores using a bunch of CTerrorGameRules calls and triggers the fullscreen_vs_scoreboard viewport panel
+			 *
+			 *  find by String "fullscreen_vs_scoreboard", and look for a func which also creates a "scores" kv and sets values for "t1", "t2", "c1", "c2", and "tiebreak"
+			 */
+			"EndVersusModeRound"
+			{
+				"library"	"server"
+				"linux"		"@_ZN19CDirectorVersusMode18EndVersusModeRoundEb"
+				"windows"	"\x83\xEC\x10\x57\x8B\xF9\xE8"
+				/* 83 EC 10 57 8B F9 E8 */
+			}
+			
 /*********************************************************************
 ****************** PLAYER SLOTS PATCHING *****************************
 *********************************************************************/
@@ -679,7 +694,8 @@
 			{
 				/* look for "#Valve_Reject_Server_Full" */
 				"library"	"engine"
-				"linux"		"\x8B\x86\x7C\x01\x00\x00\x85\xC0\x74" // 2.0.8.7 fix, thanks to ivailosp for the sig
+				"linux"		"\x8B\x2A\x2A\x2A\x00\x00\x85\x2A\x74\x2C"
+                /* 8B ? ? ? 00 00 85 ? 74 2C */
 
 				"windows"	"\x74\x2A\x8B\x54\x2A\x2A\x8B\x06\x8B\x7A\x2A\x8B\x50\x2A\x8B\xCE\xFF\xD2\x2B\xF8\x8B\x06\x8B\x50\x2A\x8B\xCE\xFF\xD2\x03\xC7"
 					/* 74 ?  8B 54 ?  ?  8B 06 8B 7A ?  8B 50 ?  8B CE FF D2 2B F8 8B 06 8B 50 ?  8B CE FF D2 03 C7 */			
@@ -729,8 +745,8 @@
 			{
 				"library"	"server"
 				"linux"		"@_ZN9CDirector13ResetMobTimerEv"
-				"windows"	"\xD9\xEE\x51\x81\xC1\xCC\x01\x00\x00\xD9\x1C\x24\xE8\x2A\x2A\x2A\x2A\xC3"
-							/* D9 EE 51 81 C1 CC 01 00 00 D9 1C 24 E8 ? ? ? ? C3*/
+				"windows"	"\xD9\xEE\x51\x81\xC1\xD4\x01\x00\x00\xD9\x1C\x24\xE8\x2A\x2A\x2A\x2A\xC3"
+							/* D9 EE 51 81 C1 D4 01 00 00 D9 1C 24 E8 ? ? ? ? C3 */
 			}
 			/* CGameRulesProxy::NotifyNetworkStateChanged()
 				This function is called before changing a variety of 
