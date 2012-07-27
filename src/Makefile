@@ -32,7 +32,7 @@ OPT_TARGETS = \
 \
 	l4d2_blind_infected.smx l4d_weapon_limits.smx \
 \
-	l4d2_nobhaps.smx l4d2_scoremod.smx \
+	l4d2_nobhaps.smx l4d2_scoremod.smx l4d2_finaledistfixer.smx l4d_hittable_fix.smx \
 \
 	l4d2_nospitterduringtank.smx l4d_thirdpersonshoulderblock.smx \
 \
