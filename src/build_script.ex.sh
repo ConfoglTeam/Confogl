@@ -14,6 +14,8 @@ PSIMSTUFF="psim-stuff"
 LGOFNOC="lgofnoc"
 # don-stuff: https://bitbucket.org/DonSanchez/random-sourcemod-stuff/
 DONSTUFF="don-stuff"
+# vintik-plugins: https://github.com/thevintik/sm_plugins
+VINTIK="vintik-plugins"
 # l4d2util: https://github.com/Jahze/l4d2util
 L4D2UTIL="l4d2util"
 # l4d2_direct: https://github.com/ProdigySim/l4d2_direct
