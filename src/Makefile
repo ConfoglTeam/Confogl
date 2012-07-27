@@ -14,6 +14,8 @@ PSIMSTUFF ?= psim-stuff
 LGOFNOC ?= lgofnoc
 # don-stuff: https://bitbucket.org/DonSanchez/random-sourcemod-stuff/
 DONSTUFF ?= don-stuff
+# vintik-plugins: https://github.com/thevintik/sm_plugins
+VINTIK ?= vintik-plugins
 # l4d2util: https://github.com/Jahze/l4d2util
 L4D2UTIL ?= l4d2util
 # l4d2_direct: https://github.com/ProdigySim/l4d2_direct
@@ -21,6 +23,8 @@ L4D2DIRECT ?= l4d2_direct
 
 
 ## Plugins to build.
+## Separated by source repo: 
+## 1. psim-stuff 2. crx-git 3. crx-stuff 4. don-stuff 5. confogl/src
 
 OPT_TARGETS = \
 	bossspawningfix.smx l4d2_consistenthordes.smx l4d2_getupfix.smx l4d2_noelevatorspit.smx l4d2_si_ffblock.smx \
@@ -34,7 +38,7 @@ OPT_TARGETS = \
 \
 	NoMercyElevatorFix.smx l4d2_versuswaterbrake.smx
 
-TARGETS = l4dready.smx lgofnoc.smx
+TARGETS = l4dready.smx lgofnoc.smx match_vote.smx
 
 
 PSIM_DIRS = bossspawningfix elevatorspitnullification l4d2_consistenthordes l4d2_getupfix l4d2_si_ffblock l4d2_weaponrules \
@@ -42,13 +46,15 @@ PSIM_DIRS = bossspawningfix elevatorspitnullification l4d2_consistenthordes l4d2
 
 CRXGIT_DIRS = weapon_limits blind_infected_l4d2 
 
+VINTIK_DIRS = match_vote
+
 DONSTUFF_DIRS = l4d2_nospitterduringtank l4d_thirdpersonshoulderblock
 
 SM = $(realpath $(SOURCEMOD))
 SPCOMP = $(SM)/scripting/spcomp
-INCLUDE_DIRS = $(LGOFNOC) $(SM)/scripting/include $(L4D2DIRECT)/scripting/include $(L4D2UTIL)/scripting/include $(PSIMSTUFF)
+INCLUDE_DIRS = include $(LGOFNOC) $(SM)/scripting/include $(L4D2DIRECT)/scripting/include $(L4D2UTIL)/scripting/include $(PSIMSTUFF)
 SOURCE_DIRS = $(addprefix $(CRXGIT)/,$(CRXGIT_DIRS)) $(addprefix $(PSIMSTUFF)/,$(PSIM_DIRS)) $(CRXSTUFF) \
-	$(addprefix $(DONSTUFF)/,$(DONSTUFF_DIRS)) $(L4D2UTIL)/scripting
+	$(addprefix $(DONSTUFF)/,$(DONSTUFF_DIRS)) $(addprefix $(VINTIK)/,$(VINTIK_DIRS)) $(L4D2UTIL)/scripting
 FLAGS = -v0
 OUTDIR = bin
 OUTDIR_OPT = $(OUTDIR)/optional
@@ -78,8 +84,10 @@ lgofnoc.smx:
 	cd $(LGOFNOC); $(MAKE) SOURCEMOD=$(SM)
 	mv $(LGOFNOC)/lgofnoc.smx $(OUTDIR)/
 
-# special because it uses a different target directory
+# These plugins don't go in optional so can't use our default rule
 l4dready.smx: l4dready.sp
+	$(SPCOMP) $(INCLUDES) $(FLAGS) $< -o$(OUTDIR)/$@
+match_vote.smx: match_vote.sp
 	$(SPCOMP) $(INCLUDES) $(FLAGS) $< -o$(OUTDIR)/$@
 
 plugins-prep:
