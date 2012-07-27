@@ -1,0 +1,10 @@
+syntax: glob
+
+src/crx-git
+src/crx-stuff
+src/l4d2util
+src/l4d2_direct
+src/psim-stuff
+src/vintik-plugins
+src/don-stuff
+src/lgofnoc
