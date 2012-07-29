@@ -74,14 +74,12 @@ new bool:beforeMapStart = true;
 
 new forcedStart;
 new readyStatus[MAXPLAYERS + 1];
+new bool:temporarilyBlocked[MAXPLAYERS + 1] = false;
 
 new Handle:menuPanel 					= INVALID_HANDLE;
 
 new Handle:liveTimer 					= INVALID_HANDLE;
 new bool:unreadyTimerExists				= false;
-
-new Handle:pauseDelay 					= INVALID_HANDLE;
-new bool:blockPause				= false;
 
 new Handle:cvarEnforceReady 			= INVALID_HANDLE;
 new Handle:cvarReadyCompetition 		= INVALID_HANDLE;
@@ -164,7 +162,7 @@ public OnPluginStart()
 	RegConsoleCmd("sm_unready", readyDown);
 	RegConsoleCmd("sm_notready", readyDown); //alias for people who are bad at reading instructions
 	RegConsoleCmd("sm_reready", Command_Reready);
-	RegConsoleCmd("sm_cast", regCaster);
+	RegAdminCmd("sm_cast", regCaster, ADMFLAG_GENERIC);
 	
 	RegConsoleCmd("sm_pause", readyPause);
 	RegConsoleCmd("sm_unpause", readyUnpause);
@@ -264,7 +262,7 @@ public OnPluginEnd()
 
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
-	if (readyMode)
+	if (readyMode && !inWarmUp)
 	{
 		if (IsClientInGame(client) && GetClientTeam(client) == L4D_TEAM_SURVIVORS && !(GetEntityMoveType(client) == MOVETYPE_NONE || GetEntityMoveType(client) == MOVETYPE_NOCLIP))
 		{
@@ -298,6 +296,7 @@ public OnMapEnd()
 
 public OnMapStart()
 {
+	isPaused = false;
 	DebugPrintToAll("Event map started.");
 	beforeMapStart = false;
 	//isNewCampaign = true;
@@ -758,7 +757,11 @@ public Action:eventPlayerBotReplaceCallback(Handle:event, const String:name[], b
 		DebugPrintToAll("[DEBUG] Bot replacing player %s [%d], unfreezing player.", curname, player);
 		#endif
 		
-		ToggleFreezePlayer(player, false);
+		if (player)
+		{
+			//if player isn't disconnected
+			ToggleFreezePlayer(player, false);
+		}
 	}
 	
 	return Plugin_Handled;
@@ -768,17 +771,10 @@ public Action:eventPlayerBotReplaceCallback(Handle:event, const String:name[], b
 public Action:eventPlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new player = GetClientOfUserId(GetEventInt(event, "userid"));
-	new health = GetEventInt(event, "health");
-	new dmg_health = GetEventInt(event, "dmg_health");
-	
-	#if READY_DEBUG
-	decl String:curname[128];
-	GetClientName(player,curname,128);
-	
-	DebugPrintToAll("[DEBUG] Player hurt %s [%d], health = %d, dmg_health = %d.", curname, player, health, dmg_health);
-	#endif
-	
-	SetEntityHealth(player, health + dmg_health);
+	if (GetClientHealth(player) > 0)
+	{
+		SetEntityHealth(player, GetEntProp(player, Prop_Send, "m_iMaxHealth"));
+	}
 }
 
 RestartCampaignAny()
@@ -831,6 +827,7 @@ RestartMapNow()
 
 public Action:Command_CallVote(client, args)
 {
+	if (temporarilyBlocked[client]) return Plugin_Handled;
 	if (client && IsClientInGame(client) && GetClientTeam(client) != L4D_TEAM_SPECTATE)
 	{
 		return Plugin_Continue;
@@ -842,6 +839,7 @@ public Action:Command_CallVote(client, args)
 
 public Action:Command_Spectate(client, args)
 {
+	if (temporarilyBlocked[client]) return Plugin_Handled;
 	if(IsPlayerAlive(client) && GetClientTeam(client) == L4D_TEAM_INFECTED)
 	{
 		ForcePlayerSuicide(client);
@@ -856,13 +854,8 @@ public Action:Command_Spectate(client, args)
 	//also make sure to block pause troller
 	else
 	{
-		blockPause = true;
-		if (pauseDelay != INVALID_HANDLE)
-		{
-			CloseHandle(pauseDelay);
-			pauseDelay = INVALID_HANDLE;
-		}
-		pauseDelay = CreateTimer(0.2, blockPauseToggle);
+		temporarilyBlocked[client] = true;
+		CreateTimer(0.2, Timer_UnlockClient, client);
 
 		ChangePlayerTeam(client, L4D_TEAM_INFECTED);
 		CreateTimer(0.1, Timer_Respectate, client, TIMER_FLAG_NO_MAPCHANGE);
@@ -871,16 +864,15 @@ public Action:Command_Spectate(client, args)
 	return Plugin_Handled;
 }
 
-public Action:blockPauseToggle(Handle:timer)
+public Action:Timer_UnlockClient(Handle:timer, any:client)
 {
-	blockPause = false;
-	pauseDelay = INVALID_HANDLE;
+	temporarilyBlocked[client] = false;
 }
 
 public Action:Timer_Respectate(Handle:timer, any:client)
 {
 	ChangePlayerTeam(client, L4D_TEAM_SPECTATE);
-	PrintToChatAll("[SM] %N has become a spectator (again).", client);
+	//PrintToChatAll("[SM] %N has become a spectator (again).", client);
 	if(readyMode) checkStatus();
 }
 
@@ -896,6 +888,7 @@ static bool:OptIsGagged(client)
 
 public Action:Command_Say(client, args)
 {
+	if (temporarilyBlocked[client]) return Plugin_Handled;
 	if (args < 1
 	|| (!readyMode && !isPaused)
 	|| OptIsGagged(client))
@@ -946,6 +939,7 @@ public Action:Command_Say(client, args)
 
 public Action:Command_Teamsay(client, args)
 {
+	if (temporarilyBlocked[client]) return Plugin_Handled;
 	if (args < 1
 	|| (!readyMode && !isPaused)
 	|| OptIsGagged(client))
@@ -2240,6 +2234,7 @@ TeamAttemptPause(client)
 	{
 		iPauses[PersistentTeam_A] = 0;
 		iPauses[PersistentTeam_B] = 0;
+		isNewCampaign = false;
 	}
 	if (iPauses[GetClientPersistentTeam(client)] >= GetConVarInt(cvarPausesAllowed))
 	{
@@ -2289,19 +2284,29 @@ public nativeIsGamePaused(Handle:plugin, numParams)
 
 PauseGame(any:client)
 {
+	isPaused = true;
+	canUnpause = false;
+	iInitialAllTalk = GetConVarInt(FindConVar("sv_alltalk"));
+	SetConVarInt(FindConVar("sv_alltalk"), 1);
+	//0.2s-delay fixes the issue with alltalk enabling
+	CreateTimer(0.2, PauseGameDelayed, client, TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action:PauseGameDelayed(Handle:timer, any:client)
+{
+	if ((client<=0) || (!IsClientInGame(client))) //If player leaved during 0.2 sec
+	{
+		client = GetAnyClient();
+	}
 	SetConVarInt(FindConVar("sv_pausable"), 1); //Ensure sv_pausable is set to 1
 	FakeClientCommand(client, "setpause"); //Send pause command
 	SetConVarInt(FindConVar("sv_pausable"), 0); //Reset sv_pausable back to 0
-	iInitialAllTalk = GetConVarInt(FindConVar("sv_alltalk"));
-	SetConVarInt(FindConVar("sv_alltalk"), 1);
-	isPaused = true;
-	canUnpause = false;
 	timerMinimumPause = CreateTimer(GetConVarFloat(cvarPauseDuration), AllCanUnpause, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 UnpauseGame(any:client)
 {
-	if (!client)
+	if ((client<=0) || (!IsClientInGame(client)))
 	{
 		client = GetAnyClient();
 	}
@@ -2363,10 +2368,7 @@ public Action:AllCanUnpause(Handle:timer)
 public Action:readyPause(client, args)
 {
 	//blocking pause troller
-	if (blockPause)
-	{
-		return Plugin_Handled;
-	}
+	if (temporarilyBlocked[client]) return Plugin_Handled;
 
 	//server can pause without a request
 	if(!client)
@@ -2388,10 +2390,7 @@ public Action:readyPause(client, args)
 public Action:readyUnpause(client, args)
 {
 	//blocking unpause troller
-	if (blockPause)
-	{
-		return Plugin_Handled;
-	}
+	if (temporarilyBlocked[client]) return Plugin_Handled;
 
 	//server can unpause without a request
 	if(!client)
