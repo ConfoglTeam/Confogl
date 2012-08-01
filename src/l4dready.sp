@@ -183,6 +183,7 @@ public OnPluginStart()
 	HookEvent("player_bot_replace", eventPlayerBotReplaceCallback);
 	HookEvent("bot_player_replace", eventBotPlayerReplaceCallback);
 	
+	HookEvent("player_disconnect", eventPlayerDisconnectCallback, EventHookMode_Pre);
 	HookEvent("player_spawn", eventSpawnReadyCallback);	
 	HookEvent("player_team", Event_PlayerTeam);
 	
@@ -195,7 +196,7 @@ public OnPluginStart()
 	cvarReadyHalves = CreateConVar("l4d_ready_both_halves", "0", "Make players ready up both during the first and second rounds of a map", CONVAR_FLAGS_PLUGIN);
 	cvarReadyMinimum = CreateConVar("l4d_ready_minimum_players", "8", "Minimum # of players before we can ready up", CONVAR_FLAGS_PLUGIN);
 	cvarReadyServerCfg = CreateConVar("l4d_ready_server_cfg", "", "Config to execute when the map is changed (to exec after server.cfg).", CONVAR_FLAGS_PLUGIN);
-	cvarReadySearchKeyDisable = CreateConVar("l4d_ready_search_key_disable", "1", "Automatically disable plugin if sv_search_key is blank", CONVAR_FLAGS_PLUGIN);
+	cvarReadySearchKeyDisable = CreateConVar("l4d_ready_search_key_disable", "0", "Automatically disable plugin if sv_search_key is blank", CONVAR_FLAGS_PLUGIN);
 	cvarCFGName = CreateConVar("l4d_ready_cfg_name", "", "CFG Name to display on the RUP Menu", CONVAR_FLAGS_PLUGIN);
 	cvarPausesAllowed = CreateConVar("l4d_ready_pause_allowed", "3", "Number of times each team can pause per campaign", CONVAR_FLAGS_PLUGIN);
 	cvarPauseDuration = CreateConVar("l4d_ready_pause_duration", "90.0", "Minimum duration of pause in seconds before either team can unpause", CONVAR_FLAGS_PLUGIN);
@@ -354,6 +355,32 @@ public OnClientDisconnect()
 	if (readyMode) checkStatus();
 }
 
+public Action:eventPlayerDisconnectCallback(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	if (dontBroadcast) return Plugin_Continue;
+	
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if( client && !IsFakeClient(client))
+	{
+		decl String:clientName[128], String:networkID[22], String:reason[128];
+		GetEventString(event, "name", clientName, sizeof(clientName));
+		GetEventString(event, "networkid", networkID, sizeof(networkID));
+		GetEventString(event, "reason", reason, sizeof(reason));
+		//announce disconnect reason
+		PrintToChatAll("[SM] %s left the game. %s", clientName, reason);
+		
+		new Handle:newEvent = CreateEvent("player_disconnect", true);
+		SetEventInt(newEvent, "userid", GetEventInt(event, "userid"));
+		SetEventString(newEvent, "reason", reason);
+		SetEventString(newEvent, "name", clientName);
+		SetEventString(newEvent, "networkid", networkID);
+		//fire non-broadcasted event instead
+		FireEvent(newEvent, true);
+		return Plugin_Stop;
+	}
+	return Plugin_Continue;
+}
+
 public OnClientAuthorized(client,const String:SteamID[])
 {
 	if (GetConVarInt(cvarEnforceReady) && GetConVarInt(cvarConnectEnabled) && !IsFakeClient(client))
@@ -386,7 +413,15 @@ checkStatus()
 		}
 	}
 	if(!humans || humans < GetConVarInt(cvarReadyMinimum))
+	{
+		if (goingLive)
+		{
+			goingLive = 0;
+			PrintHintTextToAll("Aborted going live due to player leaving.");
+			KillTimer(liveTimer);
+		}
 		return;
+	}
 	
 	if ((goingLive && (humans == ready))
 	|| forcedStart)
@@ -605,7 +640,7 @@ public Action:timerUnreadyCallback(Handle:timer)
 	
 	for (new i = 1; i < L4D_MAXCLIENTS_PLUS1; i++)
 	{
-		if (IsClientInGameHuman(i)) 
+		if (IsClientInGameHuman(i) && (GetClientTeam(i) != L4D_TEAM_SPECTATE || IsClientCaster(i)))
 		{
 			//use panel for ready up stuff?
 			if(!readyStatus[i])
@@ -1145,7 +1180,7 @@ DrawReadyPanelList()
 		
 		for(new i = 1; i < L4D_MAXCLIENTS_PLUS1; i++) 
 		{
-			if(IsClientInGameHuman(i)) 
+			if(IsClientInGameHuman(i) && (GetClientTeam(i) != L4D_TEAM_SPECTATE || IsClientCaster(i))) 
 			{
 				GetClientName(i, name, sizeof(name));
 				
@@ -1170,7 +1205,7 @@ DrawReadyPanelList()
 		
 		for(new i = 1; i < L4D_MAXCLIENTS_PLUS1; i++) 
 		{
-			if(IsClientInGameHuman(i) && GetClientTeam(i) != L4D_TEAM_SPECTATE)
+			if(IsClientInGameHuman(i) && (GetClientTeam(i) != L4D_TEAM_SPECTATE || IsClientCaster(i)))
 			{
 				GetClientName(i, name, sizeof(name));
 				
@@ -1194,7 +1229,7 @@ DrawReadyPanelList()
 		
 		for(new i = 1; i < L4D_MAXCLIENTS_PLUS1; i++) 
 		{
-			if(IsClientInGameHuman(i) && GetClientTeam(i) == L4D_TEAM_SPECTATE) 
+			if(IsClientInGameHuman(i) && GetClientTeam(i) == L4D_TEAM_SPECTATE  && !IsClientCaster(i))
 			{
 				GetClientName(i, name, sizeof(name));
 			
