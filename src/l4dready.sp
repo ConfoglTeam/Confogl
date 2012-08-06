@@ -248,7 +248,6 @@ public OnAllPluginsLoaded()
 		// supply these commands which would otherwise be done by the team manager
 		
 		RegAdminCmd("sm_swap", Command_Swap, ADMFLAG_BAN, "sm_swap <player1> [player2] ... [playerN] - swap all listed players to opposite teams");
-		RegAdminCmd("sm_swap", Command_Swap, ADMFLAG_BAN, "sm_swap <player1> [player2] ... [playerN] - swap all listed players to opposite teams");
 		RegAdminCmd("sm_swapto", Command_SwapTo, ADMFLAG_BAN, "sm_swapto <player1> [player2] ... [playerN] <teamnum> - swap all listed players to <teamnum> (1,2, or 3)");
 		RegAdminCmd("sm_swapteams", Command_SwapTeams, ADMFLAG_BAN, "sm_swapteams2 - swap the players between both teams");
 	}
@@ -357,7 +356,7 @@ public OnClientDisconnect()
 
 public Action:eventPlayerDisconnectCallback(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if (dontBroadcast) return Plugin_Continue;
+	if (dontBroadcast || !GetConVarInt(cvarEnforceReady)) return Plugin_Continue;
 	
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if( client && !IsFakeClient(client))
@@ -367,7 +366,7 @@ public Action:eventPlayerDisconnectCallback(Handle:event, const String:name[], b
 		GetEventString(event, "networkid", networkID, sizeof(networkID));
 		GetEventString(event, "reason", reason, sizeof(reason));
 		//announce disconnect reason
-		PrintToChatAll("[SM] %s left the game. %s", clientName, reason);
+		PrintToChatAll("\x01[SM] \x05%s \x01left the game (%s)", clientName, reason);
 		
 		new Handle:newEvent = CreateEvent("player_disconnect", true);
 		SetEventInt(newEvent, "userid", GetEventInt(event, "userid"));
@@ -387,7 +386,7 @@ public OnClientAuthorized(client,const String:SteamID[])
 	{
 		decl String:Name[128];
 		GetClientName(client, Name, sizeof(Name));
-		PrintToChatAll("[SM] %s (%s) has connected", Name, SteamID);
+		PrintToChatAll("\x01[SM] \x05%s \x01(%s) has connected", Name, SteamID);
 	}
 }
 
@@ -882,7 +881,7 @@ public Action:Command_Spectate(client, args)
 	if(GetClientTeam(client) != L4D_TEAM_SPECTATE)
 	{
 		ChangePlayerTeam(client, L4D_TEAM_SPECTATE);
-		PrintToChatAll("[SM] %N has become a spectator.", client);
+		PrintToChatAll("\x01[SM] \x05%N \x01has become a spectator.", client);
 		if(readyMode) checkStatus();
 	}
 	//respectate trick to get around spectator camera being stuck
@@ -1055,9 +1054,9 @@ public Action:readyUp(client, args)
 	GetClientName(client, name, sizeof(name));
 	
 	if(realPlayers >= minPlayers)
-		PrintToChatAll("%s is ready.", name);
+		PrintToChatAll("\x05%s \x01is ready.", name);
 	else
-	PrintToChatAll("%s is ready. A minimum of %d players is required.", name, minPlayers);
+	PrintToChatAll("\x05%s \x01is ready. A minimum of \x04%d \x01players is required.", name, minPlayers);
 	
 	readyStatus[client] = 1;
 	checkStatus();
@@ -1081,7 +1080,7 @@ public Action:readyDown(client, args)
 	
 	decl String:name[MAX_NAME_LENGTH];
 	GetClientName(client, name, sizeof(name));
-	PrintToChatAll("%s is no longer ready.", name);
+	PrintToChatAll("\x05%s \x01is no longer ready.", name);
 	
 	readyStatus[client] = 0;
 	checkStatus();
@@ -2277,7 +2276,7 @@ TeamAttemptPause(client)
 		return false;
 	}
 	iPauses[GetClientPersistentTeam(client)]++;
-	PrintToChatAll("[SM] %N has paused the game! Their team has %d pauses remaining for this campaign.", client, GetConVarInt(cvarPausesAllowed) - iPauses[GetClientPersistentTeam(client)]);
+	PrintToChatAll("\x01[SM] \x05%N \x01has paused the game! Their team has \x04%d \x01pauses remaining for this campaign.", client, GetConVarInt(cvarPausesAllowed) - iPauses[GetClientPersistentTeam(client)]);
 	PrintToChatAll("[SM] Players will be stuck at 99%% loading while the game is paused. Unpause it to let them through.");
 	PauseGame(client);
 	return true;
@@ -2305,7 +2304,7 @@ ClientAttemptsUnpause(client)
 	}
 	if (team == lastTeamPause || canUnpause)
 	{
-		PrintToChatAll("[SM] %N has unpaused the game! Game is going live in %d seconds...", client, L4D_UNPAUSE_DELAY);
+		PrintToChatAll("\x01[SM] \x05%N \x01has unpaused the game! Game is going live in %d seconds...", client, L4D_UNPAUSE_DELAY);
 		UnpauseGameDelay(client);
 		return;
 	}
