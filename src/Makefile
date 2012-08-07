@@ -16,9 +16,9 @@ LGOFNOC ?= lgofnoc
 DONSTUFF ?= don-stuff
 # vintik-plugins: https://github.com/thevintik/sm_plugins
 VINTIK ?= vintik-plugins
-# l4d2util: https://github.com/Jahze/l4d2util
+# l4d2util: https://github.com/ConfoglTeam/l4d2util
 L4D2UTIL ?= l4d2util
-# l4d2_direct: https://github.com/ProdigySim/l4d2_direct
+# l4d2_direct: https://github.com/ConfoglTeam/l4d2_direct
 L4D2DIRECT ?= l4d2_direct
 
 
