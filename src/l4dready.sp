@@ -75,6 +75,7 @@ new bool:beforeMapStart = true;
 new forcedStart;
 new readyStatus[MAXPLAYERS + 1];
 new bool:temporarilyBlocked[MAXPLAYERS + 1] = false;
+new sidesChanging = -1;
 
 new Handle:menuPanel 					= INVALID_HANDLE;
 
@@ -535,6 +536,7 @@ public Action:eventRoundEndCallback(Handle:event, const String:name[], bool:dont
 	}
 	
 	isCampaignBeingRestarted = false;
+	sidesChanging++;
 }
 
 public Action:eventRSLiveCallback(Handle:event, const String:name[], bool:dontBroadcast)
@@ -543,6 +545,7 @@ public Action:eventRSLiveCallback(Handle:event, const String:name[], bool:dontBr
 	DebugPrintToAll("[DEBUG] Event round has started");
 	#endif
 	
+	sidesChanging = -1;
 	//currently automating campaign restart before going live?
 	if(insideCampaignRestart > 0) 
 	{
@@ -873,7 +876,7 @@ public Action:Command_CallVote(client, args)
 
 public Action:Command_Spectate(client, args)
 {
-	if (temporarilyBlocked[client]) return Plugin_Handled;
+	if (sidesChanging>0 || temporarilyBlocked[client]) return Plugin_Handled;
 	if(IsPlayerAlive(client) && GetClientTeam(client) == L4D_TEAM_INFECTED)
 	{
 		ForcePlayerSuicide(client);
