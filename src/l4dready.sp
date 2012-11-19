@@ -19,7 +19,7 @@
 #define READY_DEBUG 0
 #define READY_DEBUG_LOG 0
 
-#define READY_VERSION "0.17.11"
+#define READY_VERSION "0.17.12"
 #define READY_SCAVENGE_WARMUP 1
 #define READY_LIVE_COUNTDOWN 5
 #define READY_UNREADY_HINT_PERIOD 10.0
@@ -98,9 +98,10 @@ new Handle:cvarPauseDuration 			= INVALID_HANDLE;
 new Handle:cvarConnectEnabled 			= INVALID_HANDLE;
 new Handle:cvarBlockSpecGlobalChat 		= INVALID_HANDLE;
 new Handle:cvarDisableReadySpawns		= INVALID_HANDLE;
+new Handle:cvarBlockPickupPauses		= INVALID_HANDLE;
 
 new Handle:fwdOnReadyRoundRestarted 	= INVALID_HANDLE;
-new Handle:fwdOnRoundIsLive			= INVALID_HANDLE;
+new Handle:fwdOnRoundIsLive				= INVALID_HANDLE;
 
 new Handle:teamPlacementTrie 			= INVALID_HANDLE;
 new Handle:casterTrie 					= INVALID_HANDLE;
@@ -136,6 +137,7 @@ new Handle:fTOB = INVALID_HANDLE; //TakeOverBot
 new teamPlacementArray[256];  //after client connects, try to place him to this team
 new teamPlacementAttempts[256]; //how many times we attempt and fail to place a person
 
+new pickupCount = 0;
 
 public Plugin:myinfo =
 {
@@ -188,9 +190,14 @@ public OnPluginStart()
 	HookEvent("player_spawn", eventSpawnReadyCallback);	
 	HookEvent("player_team", Event_PlayerTeam);
 	
+	HookEvent("revive_begin", Event_PickupStart, EventHookMode_PostNoCopy);
+	HookEvent("revive_end", Event_PickupEnd, EventHookMode_PostNoCopy);
+	HookEvent("revive_success", Event_PickupEnd, EventHookMode_PostNoCopy);
+	
 	fwdOnReadyRoundRestarted = CreateGlobalForward("OnReadyRoundRestarted", ET_Event);
 	fwdOnRoundIsLive = CreateGlobalForward("OnRoundIsLive", ET_Event);
 	
+
 	CreateConVar("l4d_ready_version", READY_VERSION, "Version of the ready up plugin.", CONVAR_FLAGS_PLUGIN|FCVAR_DONTRECORD);
 	cvarEnforceReady = CreateConVar("l4d_ready_enabled", "0", "Make players ready up by default before a match begins", CONVAR_FLAGS_PLUGIN);
 	cvarReadyCompetition = CreateConVar("l4d_ready_competition", "0", "Disable all plugins but a few competition-allowed ones", CONVAR_FLAGS_PLUGIN);
@@ -204,6 +211,7 @@ public OnPluginStart()
 	cvarConnectEnabled = CreateConVar("l4d_ready_connect_enabled", "1", "Show Announcements When Players Join", CONVAR_FLAGS_PLUGIN);
 	cvarBlockSpecGlobalChat = CreateConVar("l4d_block_spectator_globalchat", "0", "Prevent non-caster Spectators from global chatting, it gets redirected to teamchat", CONVAR_FLAGS_PLUGIN);
 	cvarDisableReadySpawns = CreateConVar("l4d_ready_disable_spawns", "0", "Prevent SI from having ghost-mode spawns during readyup.", CONVAR_FLAGS_PLUGIN);
+	cvarBlockPickupPauses = CreateConVar("l4d_block_pickup_pauses", "0", "Ignore pause requests as long as there are on-going pickups.", CONVAR_FLAGS_PLUGIN);
 	
 	cvarSearchKey = FindConVar("sv_search_key");
 	cvarGameMode = FindConVar("mp_gamemode");
@@ -262,7 +270,7 @@ public OnPluginEnd()
 }
 
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
-{
+{	
 	if (readyMode && !inWarmUp)
 	{
 		if (IsClientInGame(client) && GetClientTeam(client) == L4D_TEAM_SURVIVORS && !(GetEntityMoveType(client) == MOVETYPE_NONE || GetEntityMoveType(client) == MOVETYPE_NOCLIP))
@@ -297,6 +305,8 @@ public OnMapEnd()
 
 public OnMapStart()
 {
+	pickupCount = 0;	//in case of mid-pickup map changes
+	
 	isPaused = false;
 	DebugPrintToAll("Event map started.");
 	beforeMapStart = false;
@@ -367,7 +377,7 @@ public Action:eventPlayerDisconnectCallback(Handle:event, const String:name[], b
 		GetEventString(event, "networkid", networkID, sizeof(networkID));
 		GetEventString(event, "reason", reason, sizeof(reason));
 		//announce disconnect reason
-		PrintToChatAll("\x01[SM] \x05%s \x01left the game (%s)", clientName, reason);
+		PrintToChatAll("\x01[SM] \x03%s \x01left the game (\x04%s\x01)", clientName, reason);
 		
 		new Handle:newEvent = CreateEvent("player_disconnect", true);
 		SetEventInt(newEvent, "userid", GetEventInt(event, "userid"));
@@ -387,7 +397,17 @@ public OnClientAuthorized(client,const String:SteamID[])
 	{
 		decl String:Name[128];
 		GetClientName(client, Name, sizeof(Name));
-		PrintToChatAll("\x01[SM] \x05%s \x01(%s) has connected", Name, SteamID);
+		PrintToChatAll("\x01[SM] \x03%s \x01(\x04%s\x01) has connected", Name, SteamID);
+	}
+}
+
+public OnClientPutInServer(client)
+{
+	if (GetConVarInt(cvarEnforceReady) && GetConVarInt(cvarConnectEnabled) && !IsFakeClient(client) && isPaused)
+	{
+		decl String:Name[128];
+		GetClientName(client, Name, sizeof(Name));
+		PrintToChatAll("\x01[SM] \x03%s \x01is now fully loaded in game", Name);
 	}
 }
 
@@ -537,6 +557,8 @@ public Action:eventRoundEndCallback(Handle:event, const String:name[], bool:dont
 	
 	isCampaignBeingRestarted = false;
 	sidesChanging++;
+	
+	pickupCount = 0;
 }
 
 public Action:eventRSLiveCallback(Handle:event, const String:name[], bool:dontBroadcast)
@@ -613,11 +635,11 @@ public Action:timerLiveMessageCallback(Handle:timer)
 	
 	if(GetConVarInt(cvarReadyHalves) || isSecondRound)
 	{
-		PrintToChatAll("[SM] Match is LIVE!");
+		PrintToChatAll("\x01[SM] \x04Match is\x01 \x05LIVE\x01!");
 	}
 	else
 	{
-		PrintToChatAll("[SM] Match is LIVE for both halves, say !reready to request a ready-up before the next half.");
+		PrintToChatAll("\x01[SM] \x04Match is\x01 \x04LIVE\x01 for both halves, say !reready to request a ready-up before the next half.");
 	}
 	
 	return Plugin_Stop;
@@ -884,7 +906,7 @@ public Action:Command_Spectate(client, args)
 	if(GetClientTeam(client) != L4D_TEAM_SPECTATE)
 	{
 		ChangePlayerTeam(client, L4D_TEAM_SPECTATE);
-		PrintToChatAll("\x01[SM] \x05%N \x01has become a spectator.", client);
+		PrintToChatAll("\x01[SM] \x03%N \x01has become a spectator.", client);
 		if(readyMode) checkStatus();
 	}
 	//respectate trick to get around spectator camera being stuck
@@ -933,7 +955,7 @@ public Action:Command_Say(client, args)
 		return Plugin_Continue;
 	}
 	
-	if (client && GetClientTeam(client) == L4D_TEAM_SPECTATE)
+	if (client && IsClientInGame(client) && GetClientTeam(client) == L4D_TEAM_SPECTATE)
 	{
 		if (!IsClientCaster(client) && GetConVarBool(cvarBlockSpecGlobalChat))
 		{
@@ -1057,9 +1079,9 @@ public Action:readyUp(client, args)
 	GetClientName(client, name, sizeof(name));
 	
 	if(realPlayers >= minPlayers)
-		PrintToChatAll("\x05%s \x01is ready.", name);
+		PrintToChatAll("\x03%s \x01is ready.", name);
 	else
-	PrintToChatAll("\x05%s \x01is ready. A minimum of \x04%d \x01players is required.", name, minPlayers);
+	PrintToChatAll("\x03%s \x01is ready. A minimum of \x05%d \x01players is required.", name, minPlayers);
 	
 	readyStatus[client] = 1;
 	checkStatus();
@@ -1083,7 +1105,7 @@ public Action:readyDown(client, args)
 	
 	decl String:name[MAX_NAME_LENGTH];
 	GetClientName(client, name, sizeof(name));
-	PrintToChatAll("\x05%s \x01is no longer ready.", name);
+	PrintToChatAll("\x03%s \x01is no longer ready.", name);
 	
 	readyStatus[client] = 0;
 	checkStatus();
@@ -1739,7 +1761,7 @@ public Action:Command_Swap(client, args)
 		
 		new team = GetOppositeClientTeam(player_id);
 		teamPlacementArray[player_id] = team;
-		PrintToChatAll("[SM] %N has been swapped to the %s team.", player_id, L4D_TEAM_NAME(team));
+		PrintToChatAll("\x01[SM] \x03%N \x01has been swapped to the \x04%s \x01team.", player_id, L4D_TEAM_NAME(team));
 	}
 	
 	TryTeamPlacement();
@@ -1778,7 +1800,7 @@ public Action:Command_SwapTo(client, args)
 			continue;
 		
 		teamPlacementArray[player_id] = team;
-		PrintToChatAll("[SM] %N has been swapped to the %s team.", player_id, L4D_TEAM_NAME(team));
+		PrintToChatAll("\x01[SM] \x03%N \x01has been swapped to the \x04%s \x01team.", player_id, L4D_TEAM_NAME(team));
 	}
 	
 	TryTeamPlacement();
@@ -2279,7 +2301,7 @@ TeamAttemptPause(client)
 		return false;
 	}
 	iPauses[GetClientPersistentTeam(client)]++;
-	PrintToChatAll("\x01[SM] \x05%N \x01has paused the game! Their team has \x04%d \x01pauses remaining for this campaign.", client, GetConVarInt(cvarPausesAllowed) - iPauses[GetClientPersistentTeam(client)]);
+	PrintToChatAll("\x01[SM] \x03%N \x01has paused the game! Their team has \x05%d \x01pauses remaining for this campaign.", client, GetConVarInt(cvarPausesAllowed) - iPauses[GetClientPersistentTeam(client)]);
 	PrintToChatAll("[SM] Players will be stuck at 99%% loading while the game is paused. Unpause it to let them through.");
 	PauseGame(client);
 	return true;
@@ -2307,7 +2329,7 @@ ClientAttemptsUnpause(client)
 	}
 	if (team == lastTeamPause || canUnpause)
 	{
-		PrintToChatAll("\x01[SM] \x05%N \x01has unpaused the game! Game is going live in %d seconds...", client, L4D_UNPAUSE_DELAY);
+		PrintToChatAll("\x01[SM] \x03%N \x01has unpaused the game! Game is going live in %d seconds...", client, L4D_UNPAUSE_DELAY);
 		UnpauseGameDelay(client);
 		return;
 	}
@@ -2404,6 +2426,12 @@ public Action:AllCanUnpause(Handle:timer)
 
 public Action:readyPause(client, args)
 {
+	if (pickupCount > 0 && GetConVarBool(cvarBlockPickupPauses))
+	{
+		PrintToChat(client, "Pausing is blocked while survivors are picking someone up! Try again after the pick-ups are finished.");
+		return Plugin_Handled;
+	}
+	
 	//blocking pause troller
 	if (temporarilyBlocked[client]) return Plugin_Handled;
 
@@ -2445,4 +2473,18 @@ public Action:readyUnpause(client, args)
 	ClientAttemptsUnpause(client);
 	
 	return Plugin_Handled;
+}
+
+public Event_PickupStart(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	pickupCount++;
+}
+
+public Event_PickupEnd(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	pickupCount--;
+	if (pickupCount < 0)
+	{	//in case of midpickup plugin load or something
+		pickupCount = 0;
+	}
 }
