@@ -1,8 +1,11 @@
 #pragma semicolon 1
 
+#define L4D2UTIL_STOCKS_ONLY
+
 #include <sourcemod>
 #include <sdktools>
 #include <left4downtown>
+#include <l4d2util>
 
 /*
 * PROGRAMMING CREDITS:
@@ -19,7 +22,7 @@
 #define READY_DEBUG 0
 #define READY_DEBUG_LOG 0
 
-#define READY_VERSION "0.17.12"
+#define READY_VERSION "0.17.13"
 #define READY_SCAVENGE_WARMUP 1
 #define READY_LIVE_COUNTDOWN 5
 #define READY_UNREADY_HINT_PERIOD 10.0
@@ -137,8 +140,6 @@ new Handle:fTOB = INVALID_HANDLE; //TakeOverBot
 new teamPlacementArray[256];  //after client connects, try to place him to this team
 new teamPlacementAttempts[256]; //how many times we attempt and fail to place a person
 
-new pickupCount = 0;
-
 public Plugin:myinfo =
 {
 	name = "L4D2 Ready Up",
@@ -189,10 +190,6 @@ public OnPluginStart()
 	HookEvent("player_disconnect", eventPlayerDisconnectCallback, EventHookMode_Pre);
 	HookEvent("player_spawn", eventSpawnReadyCallback);	
 	HookEvent("player_team", Event_PlayerTeam);
-	
-	HookEvent("revive_begin", Event_PickupStart, EventHookMode_PostNoCopy);
-	HookEvent("revive_end", Event_PickupEnd, EventHookMode_PostNoCopy);
-	HookEvent("revive_success", Event_PickupEnd, EventHookMode_PostNoCopy);
 	
 	fwdOnReadyRoundRestarted = CreateGlobalForward("OnReadyRoundRestarted", ET_Event);
 	fwdOnRoundIsLive = CreateGlobalForward("OnRoundIsLive", ET_Event);
@@ -305,8 +302,6 @@ public OnMapEnd()
 
 public OnMapStart()
 {
-	pickupCount = 0;	//in case of mid-pickup map changes
-	
 	isPaused = false;
 	DebugPrintToAll("Event map started.");
 	beforeMapStart = false;
@@ -556,9 +551,7 @@ public Action:eventRoundEndCallback(Handle:event, const String:name[], bool:dont
 	}
 	
 	isCampaignBeingRestarted = false;
-	sidesChanging++;
-	
-	pickupCount = 0;
+	sidesChanging++;	
 }
 
 public Action:eventRSLiveCallback(Handle:event, const String:name[], bool:dontBroadcast)
@@ -2426,7 +2419,7 @@ public Action:AllCanUnpause(Handle:timer)
 
 public Action:readyPause(client, args)
 {
-	if (pickupCount > 0 && GetConVarBool(cvarBlockPickupPauses))
+	if (GetNumberOfOngoingPickups() > 0 && GetConVarBool(cvarBlockPickupPauses))
 	{
 		PrintToChat(client, "Pausing is blocked while survivors are picking someone up! Try again after the pick-ups are finished.");
 		return Plugin_Handled;
@@ -2452,6 +2445,7 @@ public Action:readyPause(client, args)
 	
 	return Plugin_Handled;
 }
+
 public Action:readyUnpause(client, args)
 {
 	//blocking unpause troller
@@ -2475,16 +2469,45 @@ public Action:readyUnpause(client, args)
 	return Plugin_Handled;
 }
 
-public Event_PickupStart(Handle:event, const String:name[], bool:dontBroadcast)
+static const gettingPickedUpAnimations[][] =	//first 4 are normal, last 2 are ledge hangs
 {
-	pickupCount++;
-}
+	// 0: Coach, 1: Nick
+	{615, 616, 617, 618, 635, 636}, {614, 615, 616, 617, 641, 642},
+	// 2: Rochelle, 3: Ellis
+	{623, 624, 625, 626, 649, 650}, {619, 620, 621, 622, 646, 647},
+    // 4: Louis, 5: Zoey
+	{522, 523, 524, 525, 549, 550}, {527, 528, -1, -1, 552, 553}, //couldnt find zoey's _04 _05 seqs
+	// 6: Bill, 7: Francis
+	{522, 523, 524, 525, 549, 550}, {525, 526, 527, 528, 552, 553}
+};
 
-public Event_PickupEnd(Handle:event, const String:name[], bool:dontBroadcast)
+stock GetNumberOfOngoingPickups()
 {
-	pickupCount--;
-	if (pickupCount < 0)
-	{	//in case of midpickup plugin load or something
-		pickupCount = 0;
+	new count = 0;
+	decl seq;
+	decl SurvivorCharacter:character;
+	
+	for (new n = 1; n <= MaxClients; n++)
+	{
+		if (IsClientInGame(n) && IsPlayerAlive(n) && L4D2Team:GetClientTeam(n) == L4D2Team_Survivors)
+		{
+			character = IdentifySurvivor(n);
+			if (character == SC_NONE) continue;
+			
+			seq = GetEntProp(n, Prop_Send, "m_nSequence");
+			for (new i = 0; i < sizeof(gettingPickedUpAnimations[]); i++)
+			{
+				if (seq == gettingPickedUpAnimations[character][i])
+				{
+					count++;
+					break;
+				}
+				else
+				{
+//					PrintToChatAll("seq not found on survivor %d: %d",character, seq);
+				}
+			}
+		}
 	}
+	return count;
 }
